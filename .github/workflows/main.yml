@@ -52,7 +52,7 @@ jobs:
     - name: Get Latest Run ID
       id: get_run_id
       run: |
-        RUN_ID=$(python -c "import mlflow; mlflow.set_tracking_uri('./mlruns'); runs = mlflow.search_runs(experiment_names=["Predict_the_introvert_from_the_extrovert_modelling"], order_by=['start_time DESC'], max_results=1); print(runs.iloc[0].run_id)")
+        RUN_ID=$(python -c "import mlflow; mlflow.set_tracking_uri('./mlruns'); runs = mlflow.search_runs(experiment_names=['Predict_the_introvert_from_the_extrovert_modelling'], order_by=['start_time DESC'], max_results=1); print(runs.iloc[0].run_id)")
         echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
     - name: Build and Push Docker Image
