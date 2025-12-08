@@ -25,7 +25,7 @@ models = [
 
 # datasets
 df = pd.read_csv(
-    "../Workflow-CI/MLProject/predict_the_introverts_from_the_extroverts_preprocessing/train_preprocessing.csv"
+    "predict_the_introverts_from_the_extroverts_preprocessing/train_preprocessing.csv"
 )
 
 # separate features
