@@ -1,0 +1,69 @@
+name: Modelling CI Workflow and Docker image Deployment
+
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+jobs:
+  train-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12.7
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12.7'
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install mlflow==2.19.0 \
+                    dagshub \
+                    pandas==2.3.3 \
+                    numpy==2.3.5 \
+                    scikit-learn==1.7.2 \
+                    xgboost==3.1.2 \
+                    scipy==1.16.3 \
+                    matplotlib seaborn
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Run Model Training
+      run: |
+        mlflow run Workflow-CI/MLProject --env-manager=local
+
+    - name: Upload MLflow Artifacts to GitHub
+      uses: actions/upload-artifact@v4
+      with:
+        name: trained-model-artifacts
+        path: mlruns/ 
+        retention-days: 5
+
+    - name: Get Latest Run ID
+      id: get_run_id
+      run: |
+        RUN_ID=$(python -c "import mlflow; mlflow.set_tracking_uri('./mlruns'); runs = mlflow.search_runs(experiment_names=['Introvert_Extrovert_Experiment'], order_by=['start_time DESC'], max_results=1); print(runs.iloc[0].run_id)")
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+    - name: Build and Push Docker Image
+      run: |
+        RUN_ID=${{ steps.get_run_id.outputs.run_id }}
+        IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/predict_introvert_extrovert:latest"
+        
+        echo "Building Docker for Run ID: $RUN_ID"
+
+        mlflow models build-docker \
+          -m "runs:/$RUN_ID/best_model" \
+          -n "$IMAGE_NAME" \
+          --enable-mlserver
+        
+        echo "Pushing image to Docker Hub"
+        docker push "$IMAGE_NAME"
