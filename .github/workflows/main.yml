@@ -63,7 +63,7 @@ jobs:
         echo "Building Docker for Run ID: $RUN_ID"
 
         mlflow models build-docker \
-          -m "runs:/$RUN_ID/best_model" \
+          -m "runs:/$RUN_ID/model" \
           -n "$IMAGE_NAME" \
           --enable-mlserver
         
